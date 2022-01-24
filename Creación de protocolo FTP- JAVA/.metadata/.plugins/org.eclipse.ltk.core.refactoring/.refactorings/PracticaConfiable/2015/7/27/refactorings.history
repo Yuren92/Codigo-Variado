@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy element &apos;&apos; to &apos;es.um.redes.intercambio.impl.Segment.fromByteArray(...)&apos;&#x0D;&#x0A;- Proyecto original: &quot;PracticaConfiable&quot;&#x0D;&#x0A;- Destination element: &apos;es.um.redes.intercambio.impl.Segment.fromByteArray(...)&apos;&#x0D;&#x0A;- Elemento original: &apos;es.um.redes.intercambio.impl.Segment.fromByteArray(...)&apos;" description="Copiar metodo" destination="/src&lt;es.um.redes.intercambio.impl{Segment.java[Segment~fromByteArray~\[B" element1="/src&lt;es.um.redes.intercambio.impl{Segment.java[Segment~fromByteArray~\[B" flags="589830" id="org.eclipse.jdt.ui.copy" members="1" policy="org.eclipse.jdt.ui.copyMembers" stamp="1435943429296" version="1.0"/>
+</session>

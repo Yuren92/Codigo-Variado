@@ -1,0 +1,312 @@
+package es.um.redes.Confiable.Intercambio;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.Timer;
+import java.util.concurrent.locks.ReentrantLock;
+
+import es.um.redes.Confiable.App.Log;
+import es.um.redes.Confiable.Intercambio.util.RecvBuffer;
+import es.um.redes.Confiable.Medio.MediumPacket;
+import es.um.redes.Confiable.Medio.MediumSocket;
+import es.um.redes.intercambio.impl.Segment;
+
+public class ReliableConnectionImpl implements ReliableConnectionIface {
+
+	private static final int PORT = 8009;
+	private static final int TIMEOUT = 1500;
+
+	private static final String ENVIO_DATOS = "Envío de datos";
+	private static final String ENVIO_ACK = "Envío de segmento de ack";
+	private static final String ENVIO_SYN = "Envío de segmento SYN";
+	private static final String ENVIO_FIN = "Envío de segmento FIN";
+	private static final String RECIBE_DATOS = "Recibe datos";
+	private static final String RECIBE_ACK = "Recibe confirmación o segmento de ack";
+	private static final String RECIBE_SYN = "Recibe segmento SYN";
+	private static final String RECIBE_FIN = "Recibe segmento FIN";
+
+	private MediumSocket socket;
+	private int MSS = 500;
+	private byte numSec;
+	private RecvBuffer bufferRecibe;
+	private InetSocketAddress addr;
+	private boolean cliente;
+	private ReentrantLock cerrojoTimeout;
+	private Timer marcaTiempo;
+	private Log log;
+
+	public ReliableConnectionImpl(String LogID) {
+		bufferRecibe = new RecvBuffer();
+		cliente = false;
+		cerrojoTimeout = new ReentrantLock();
+		marcaTiempo = new Timer();
+		this.log = new Log(LogID);
+	}
+
+	@Override
+	public void connect(InetAddress to) throws IOException {
+		addr = new InetSocketAddress(to, PORT);
+		socket = new MediumSocket();
+		Segment segmento = new Segment();
+		cliente = true;
+		segmento.generarSegmentoSYN(MSS, numSec);
+		byte[] buf = segmento.toByteArray();
+		MediumPacket paq = new MediumPacket(buf, buf.length, addr);
+		socket.send(paq);
+		cambiarNumSec();
+		log.add(ENVIO_SYN, segmento);
+		TimeoutTask t = new TimeoutTask(socket, cerrojoTimeout, this, addr,
+				segmento);
+		marcaTiempo.schedule(t, TIMEOUT);
+		MediumPacket confirmacion = new MediumPacket();
+		boolean flag = true;
+		while (flag) {
+			confirmacion = socket.receive();
+			if (confirmacion != null) {
+				Segment segmentoAux = new Segment();
+				byte[] buffer = confirmacion.getData();
+				segmentoAux.fromByteArray(buffer);
+				if (segmentoAux.checksumComprobacion()) {
+					log.add(RECIBE_ACK, segmentoAux);
+					t.cancel();
+					flag = false;
+				}
+			}
+		}
+
+	}
+
+	@Override
+	public void accept() throws IOException {
+		cliente = false;
+		socket = new MediumSocket(PORT);
+		MediumPacket recibe = new MediumPacket();
+		Segment segmentoAux = new Segment();
+		recibe = socket.receive();
+		while (recibe == null) {
+			recibe = socket.receive();
+		}
+		byte[] buffer = recibe.getData();
+		segmentoAux.fromByteArray(buffer);
+		addr = recibe.getInetAddr();
+		if (segmentoAux.checksumComprobacion()) {
+			System.out.println(RECIBE_SYN);
+			System.out.println(segmentoAux);
+			log.add(RECIBE_SYN, segmentoAux);
+			Segment confirmacion = new Segment();
+			confirmacion.generarSegmentoConfirmacion(cambiaSec(segmentoAux));
+			byte[] buf = confirmacion.toByteArray();
+			MediumPacket paq = new MediumPacket(buf, buf.length, addr);
+			socket.send(paq);
+			log.add(ENVIO_ACK, confirmacion);
+			// deberia esperar una confirmacion de establecimiento de conexion?
+		}
+	}
+
+	@Override
+	public void close() throws IOException {
+
+		     if(flag ==1){
+		       Segment fin =  new Segment();
+		       fin.crearSegmento((byte)2, nss, MSS, (byte) 0, null);
+		       byte[] buffer = fin.toByteArray();
+		       MediumPacket mp = new MediumPacket(buffer,buffer.length , addr);
+		       socket.send(mp);
+		       log.escribir("Envio fin", fin);
+		       TimeoutTask t = new TimeoutTask(mp);
+		       time.schedule(t, TIMEOUT);
+		       boolean corrupto = true;
+		       while(corrupto){
+		        MediumPacket rcv = socket.receive();
+		        if(rcv != null){
+		         byte[] respuesta = rcv.getData();
+		         Segment acksyn = new Segment();
+		         acksyn.fromByteArray(respuesta);
+		         log.escribir("Recibo peticion ack", acksyn);
+		         if(acksyn.comprobarChecksum()){
+		           t.cancel();
+		            this.intercambiarNss();
+		           corrupto= false;
+		         }
+		        }
+		       }
+		       MediumPacket rcv = socket.receive();
+		       while(rcv == null);
+		       byte[] respuesta = rcv.getData();
+		       Segment reciv = new Segment();
+		       reciv.fromByteArray(respuesta);
+		       if(reciv.comprobarChecksum()){
+		         Segment ack = new Segment();
+		         ack.crearSegmento((byte)3, nss, 0, cambiarbyte(reciv.getNseg()), null);
+		         log.escribir("Envio ack", ack);
+		         byte[] buffer1 = ack.toByteArray();
+		         MediumPacket mp1 = new MediumPacket(buffer1,buffer1.length , addr);
+		         socket.send(mp1);
+		         log.cerrarLog();
+		         System.out.println("acaba el cliente");
+		       }
+		     }else {
+		   MediumPacket rcv = socket.receive();
+		   while(rcv == null)
+		    rcv = socket.receive();
+		    byte[] respuesta = rcv.getData();
+		    Segment reciv = new Segment();
+		    reciv.fromByteArray(respuesta);
+		    if(reciv.comprobarChecksum()){
+		      Segment ack = new Segment();
+		      ack.crearSegmento((byte)3, nss, 0, cambiarbyte(reciv.getNseg()), null);
+		      byte[] buffer1 = ack.toByteArray();
+		      MediumPacket mp1 = new MediumPacket(buffer1,buffer1.length , addr);
+		      log.escribir("Envio ack", ack);
+
+		      socket.send(mp1); 
+		    }
+		    Segment fin =  new Segment();
+		    fin.crearSegmento((byte)2, nss, MSS, (byte) 0, null);
+		    byte[] buffer = fin.toByteArray();
+		    log.escribir("Envio Fin", fin);
+		    MediumPacket mp = new MediumPacket(buffer,buffer.length , addr);
+		    socket.send(mp);
+		    TimeoutTask t = new TimeoutTask(mp);
+		    time.schedule(t, TIMEOUT);
+		    boolean corrupto = true;
+		    while(corrupto){
+		     MediumPacket rcv1 = socket.receive();
+		     if(rcv1 != null){
+		      byte[] respuesta1 = rcv1.getData();
+		      Segment acksyn = new Segment();
+		      acksyn.fromByteArray(respuesta1);
+		      if(acksyn.comprobarChecksum()){
+		       log.escribir("Recibo  ack", acksyn);
+		        t.cancel();
+		         this.intercambiarNss();
+		        corrupto= false;
+		        log.cerrarLog();
+		        System.out.println("acaba el servidor");
+		      }
+		     }
+		    
+		    }
+		  }
+		 }
+	}
+
+	@Override
+	public int getMSS() {
+		return MSS;
+	}
+
+	@Override
+	public void setMSS(int mss) {
+		this.MSS = (byte) mss;
+
+	}
+
+	@Override
+	public int getTimeoutValue() {
+		return TIMEOUT;
+	}
+
+	@Override
+	public InetSocketAddress getPeerAddress() {
+		return addr;
+	}
+
+	public int write(byte[] buffer) throws IOException {
+		int datosRestantes = buffer.length;
+		int datosEnviados = 0;
+		int datosAEnviar = 0;
+		while (datosRestantes > 0) {
+			datosAEnviar = Math.min(datosRestantes, MSS);
+			byte[] data = new byte[datosAEnviar];
+			data = Arrays.copyOfRange(buffer, datosEnviados, datosEnviados
+					+ datosAEnviar);
+			datosEnviados = datosEnviados + datosAEnviar;
+			datosRestantes = datosRestantes - datosAEnviar;
+			// creo segmento y envio segmento
+			Segment s = new Segment();
+			s.generarSegmentoDatos(data, numSec);
+			byte[] datos = s.toByteArray();
+			MediumPacket paquete = new MediumPacket(datos, datos.length, addr);
+			socket.send(paquete);
+			cambiarNumSec();
+			log.add(ENVIO_DATOS, s);
+			TimeoutTask t = new TimeoutTask(socket, cerrojoTimeout, this, addr,
+					s);
+			marcaTiempo.schedule(t, TIMEOUT);
+			boolean flag = true;
+			MediumPacket ack = new MediumPacket();
+			while (flag) {
+				ack = socket.receive();
+				if (ack != null) {
+					Segment segmento = new Segment();
+					byte[] puros = ack.getData();
+					segmento.fromByteArray(puros);
+					if (segmento.checksumComprobacion()) {
+						log.add(RECIBE_ACK, segmento);
+						t.cancel();
+						flag = false;
+					}
+
+				}
+				// actualizo nseg
+			}
+		}
+		// mientras que me queden cosas envio segmento y espero ack
+		return buffer.length;
+
+	}
+
+	@Override
+	public int read(byte[] buffer) throws IOException {
+		MediumPacket recibidos = new MediumPacket();
+		while (bufferRecibe.getAvailableDataLength() < buffer.length) {
+			recibidos = socket.receive();
+			// recibo
+			while (recibidos == null) {
+				recibidos = socket.receive();
+			}
+			Segment datos = new Segment();
+			byte[] puros = recibidos.getData();
+			datos.fromByteArray(puros);
+			if (datos.checksumComprobacion()) {
+				log.add(RECIBE_DATOS, datos);
+				bufferRecibe.addReceivedSegment(datos);
+				Segment confirmacion = new Segment();
+				confirmacion.generarSegmentoConfirmacion(cambiaSec(datos));
+				byte[] conf = confirmacion.toByteArray();
+				MediumPacket ack = new MediumPacket(conf, conf.length, addr);
+				socket.send(ack);
+				log.add(ENVIO_ACK, confirmacion);
+			}
+		}
+		bufferRecibe.obtainDataInOrder(buffer);
+		return buffer.length;
+	}
+
+	public void cierraFichero() {
+		log.cerrarFichero();
+	}
+
+	public void cambiarNumSec() {
+		switch (numSec) {
+		case 0:
+			numSec = 1;
+			break;
+
+		default:
+			numSec = 0;
+			break;
+		}
+	}
+
+	public byte cambiaSec(Segment s) {
+		if (s.getSeq_n() == 0)
+			return 1;
+		else
+			return 0;
+	}
+
+}

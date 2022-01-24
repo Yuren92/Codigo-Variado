@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Articulo{% endblock %}
+
+{% block body %}
+    <h1>Añadir Articulo</h1>
+
+    {{ form(form) }}
+
+    <a href="{{ path('articulo_listar') }}">Listado</a>
+{% endblock %}

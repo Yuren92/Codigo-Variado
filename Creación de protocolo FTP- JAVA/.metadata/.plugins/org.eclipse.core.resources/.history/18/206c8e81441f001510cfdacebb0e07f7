@@ -1,0 +1,13 @@
+package es.um.redes.Confiable.Intercambio;
+
+import java.util.TimerTask;
+
+public class TimeoutTask extends TimerTask {
+
+	@Override
+	public void run() {
+		
+		
+	}
+
+}

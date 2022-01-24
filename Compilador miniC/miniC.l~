@@ -1,0 +1,62 @@
+%{
+#include "codigo.h"
+#include "miniC.tab.h"
+#include <string.h>
+#include <math.h>
+int inicio_comentario = 0;
+long long i=2147483648;
+%}
+%x comentario
+%x cad
+
+digito [0-9]
+letra  [a-zA-Z] 
+entero {digito}+	      
+%%
+[ \n\t]+                      ;
+"//"(.*)[\n]        	      ;
+\"([^"\n]|\\\")*\"	      {yylval.cadena = strdup(yytext);
+							return STRING;}
+"/*"                          BEGIN(comentario);
+<comentario>("*"+[^*/]+|[^*]*)    ;
+<comentario>"*"+"/"              BEGIN(0);
+<comentario><<EOF>>	      { printf("Error: comentario no cerrado\n"); return 0;}
+"if"			      return IF;
+"else"			      return ELSE;
+"read"			      return READ;
+"while"			      return WHILE;
+"print"			      return PRINT;
+"func"			      return FUNC;
+"var" 			      return VAR;
+"let"			      return LET;
+"do"				  return DO;
+"for"				  return FOR;
+
+(_|{letra})({letra}|{digito}|_)*  {
+					if (yyleng>16){
+							printf("Error léxico: Identificador demasiado grande. \n");
+					} 
+					 return ID;
+			      }
+{entero}                      {if(atoll(yytext)>i){strcpy(yytext,"2147483648");
+				printf("Error int demasiado grande %s/n",yytext);
+				}
+				 return INTLITERAL;
+			      }
+
+
+"("                           return LPAREN;
+")"                           return RPAREN;
+"{" 			      		  return LKEY;
+"}"			      			  return RKEY;
+";"                           return SEMICOLON;
+","                           return COMMA;
+"="                           return ASSIGNOP;
+"+"                           return PLUSOP;
+"-"                           return MINUSOP;
+"*"			      			  return ASTERISK;
+"/"			      			  return BARRA;
+[^a-zA-Z0-9 \n\t();:+\-,/_{}*"]+            printf("Error léxico %s, línea %d\n", yytext,yylineno);
+
+%%
+

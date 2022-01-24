@@ -1,0 +1,303 @@
+package es.um.redes.Confiable.Intercambio;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.Timer;
+import java.util.concurrent.locks.ReentrantLock;
+
+import es.um.redes.Confiable.App.Log;
+import es.um.redes.Confiable.Intercambio.util.RecvBuffer;
+import es.um.redes.Confiable.Medio.MediumPacket;
+import es.um.redes.Confiable.Medio.MediumSocket;
+import es.um.redes.intercambio.impl.Segment;
+
+/*
+ * para el control de los timeouts lo que se hace
+ * es generar un objeto de tipo timer task y se ejecuta el metodo schedule 
+ * para pararlo y que no salte al recibir el ack, tras la correcta recepcion se cancela la timeouttask
+ * */
+
+public class ReliableConnectionImpl implements ReliableConnectionIface {
+	private static final int PORT = 8009;
+	private static final int TIMEOUT = 1500;
+	private MediumSocket socket;
+	private int MSS = 500;
+	private byte numSec;
+	private RecvBuffer bufferRecibe;
+	private InetSocketAddress addr;
+	private boolean cliente;
+	private ReentrantLock cerrojoTimeout;
+	private Timer marcaTiempo;
+	private String LogID;
+	private Log log;
+
+	public ReliableConnectionImpl(String LogID) {
+		bufferRecibe = new RecvBuffer();
+		cliente = false;
+		cerrojoTimeout = new ReentrantLock();
+		marcaTiempo = new Timer();
+		this.LogID = LogID;
+		this.log = new Log();
+	}
+
+	@Override
+	public void connect(InetAddress to) throws IOException {
+		addr = new InetSocketAddress(to, PORT);
+		socket = new MediumSocket();
+		Segment segmento = new Segment();
+		cliente = true;
+		segmento.generarSegmentoSYN(MSS, numSec);
+		byte[] buf = segmento.toByteArray();
+		MediumPacket paq = new MediumPacket(buf, buf.length, addr);
+		socket.send(paq);
+		log.addString("*** El cliente envía la petición de conexión al servidor (segmento SYN)***");
+		TimeoutTask t = new TimeoutTask(socket, cerrojoTimeout, this, addr,
+				segmento);
+		marcaTiempo.schedule(t, TIMEOUT);
+		MediumPacket confirmacion = new MediumPacket();
+		boolean flag = true;
+		while (flag) {
+			confirmacion = socket.receive();
+			if (confirmacion != null) {
+				Segment segmentoAux = new Segment();
+				byte[] buffer = confirmacion.getData();
+				segmentoAux.fromByteArray(buffer);
+				if (segmentoAux.checksumComprobacion()) {
+					log.addString("***Recibe del servidor la confirmación de la conexión***");
+					t.cancel();
+					flag = false;
+				}
+			}
+		}
+
+	}
+
+	@Override
+	public void accept() throws IOException {
+		socket = new MediumSocket(PORT);
+		MediumPacket recibe = new MediumPacket();
+		Segment segmentoAux = new Segment();
+		recibe = socket.receive();
+		while (recibe == null) {
+			recibe = socket.receive();
+		}
+		byte[] buffer = recibe.getData();
+		segmentoAux.fromByteArray(buffer);
+		addr = recibe.getInetAddr();
+		if (segmentoAux.checksumComprobacion()) {
+			log.addString("***El servidor recibe el segmento SYN del cliente***");
+			Segment confirmacion = new Segment();
+			confirmacion.generarSegmentoConfirmacion((byte) ((segmentoAux
+					.getSeq_n() + 1) % 1));
+			byte[] buf = confirmacion.toByteArray();
+			MediumPacket paq = new MediumPacket(buf, buf.length, addr);
+			socket.send(paq);
+			log.addString("***El servidor confirma la conexión***");
+			// deberia esperar una confirmacion de establecimiento de conexion?
+		}
+	}
+
+	@Override
+	public int getMSS() {
+		return MSS;
+	}
+
+	@Override
+	public void setMSS(int mss) {
+		this.MSS = (byte) mss;
+
+	}
+
+	@Override
+	public void close() throws IOException {
+		if (cliente == true) {
+			// send FIN
+			Segment FIN = new Segment();
+			FIN.segmentoCierre(numSec);
+			byte[] data = FIN.toByteArray();
+			MediumPacket fin = new MediumPacket(data, data.length, addr);
+			TimeoutTaskClose c = new TimeoutTaskClose(socket, cerrojoTimeout,
+					this, addr, FIN);
+			marcaTiempo.schedule(c, TIMEOUT);
+			// envia fin
+			socket.send(fin);
+			log.addString("***El cliente envia el segmento FIN para cerrar la conexion con el servidor***");
+			// receive ack
+			boolean flag = true;
+			MediumPacket paq = new MediumPacket();
+			while (flag) {
+				paq = socket.receive();
+				if (paq != null) {
+					Segment aux = new Segment();
+					byte[] aux2 = paq.getData();
+					aux.fromByteArray(aux2);
+					if (aux.checksumComprobacion()) {
+						c.cancel();
+						log.addString("***Le llega desde el servidor la primera confirmacion necesaria para cerrar la conexion***");
+						flag = false;
+					}
+				}
+			}
+			// receive fin
+			flag = true;
+			MediumPacket paq2 = new MediumPacket();
+			while (flag) {
+				paq2 = socket.receive();
+				if (paq2 != null) {
+					Segment aux3 = new Segment();
+					byte[] datospaq = paq2.getData();
+					aux3.fromByteArray(datospaq);
+					if (aux3.checksumComprobacion()) {
+						flag = false;
+						log.addString("*** El cliente recibe el segmento FIN indicando que la desconexion puede realizarse correctamente***");
+						// send ack
+						aux3.generarSegmentoConfirmacion((byte) ((aux3
+								.getSeq_n() + 1) % 1));
+						byte[] datos = aux3.toByteArray();
+						MediumPacket closeconn = new MediumPacket(datos,
+								datos.length, addr);
+						socket.send(closeconn);
+						log.addString("***El cliente envía la confirmación de llegada del segmento FIN, la desconexión se puede llevar a cabo***");
+					}
+				}
+			}
+
+		} else {
+			// caso servidor
+			// receive fin
+			boolean fin = true;
+			MediumPacket paqfin = new MediumPacket();
+			while (fin) {
+				paqfin = socket.receive();
+				if (paqfin != null) {
+					Segment s = new Segment();
+					byte[] datos = paqfin.getData();
+					s.fromByteArray(datos);
+					if (s.checksumComprobacion()) {
+						log.addString("***El servidor recibe el segmento FIN del servidor pidiendo la desconexión***");
+						// send ack
+						Segment s1 = new Segment();
+						s1.generarSegmentoConfirmacion((byte) ((s.getSeq_n() + 1) % 1));
+						byte[] datosPuros = s1.toByteArray();
+						MediumPacket ackfin = new MediumPacket(datosPuros,
+								datosPuros.length, addr);
+						socket.send(ackfin);
+						log.addString("***El servidor envia la confirmación de llegada del segmento FIN");
+						fin = false;
+					}
+				}
+			}
+
+			// send fin
+			Segment segfin = new Segment();
+			segfin.segmentoCierre(numSec);
+			byte[] datasegfin = segfin.toByteArray();
+			MediumPacket segundoenvio = new MediumPacket(datasegfin,
+					datasegfin.length, addr);
+			TimeoutTaskClose close = new TimeoutTaskClose(socket,
+					cerrojoTimeout, this, addr, segfin);
+			marcaTiempo.schedule(close, TIMEOUT);
+			socket.send(segundoenvio);
+			log.addString("***El servidor envía al cliente el segmento FIN, confirmando que esta preparado para la desconexion*** ");
+			// receive ack
+			fin = true;
+			MediumPacket paq3 = new MediumPacket();
+			while (fin) {
+				paq3 = socket.receive();
+				if (paq3 != null) {
+					Segment s = new Segment();
+					byte[] datos = paq3.getData();
+					s.fromByteArray(datos);
+					if (s.checksumComprobacion()) {
+						log.addString("El cliente recibe la confirmacion de llegada del segmento FIN, la desconexión puede realizarse correctamente");
+						close.cancel();
+						fin = false;
+					}
+				}
+			}
+		}
+		//genero el fichero de log fuera de los casos para que se cree correctamente en ambos
+		log.crearFicheroLog(LogID);
+	}
+
+	@Override
+	public int getTimeoutValue() {
+		return TIMEOUT;
+	}
+
+	@Override
+	public InetSocketAddress getPeerAddress() {
+		return addr;
+	}
+
+	public int write(byte[] buffer) throws IOException {
+		int datosRestantes = buffer.length;
+		int datosEnviados = 0;
+		int datosAEnviar = 0;
+		while (datosRestantes > 0) {
+			datosAEnviar = Math.min(datosRestantes, MSS);
+			byte[] data = new byte[datosAEnviar];
+			data = Arrays.copyOfRange(buffer, datosEnviados, datosEnviados
+					+ datosAEnviar);
+			datosEnviados = datosEnviados + datosAEnviar;
+			datosRestantes = datosRestantes - datosAEnviar;
+			// creo segmento y envio segmento
+			Segment s = new Segment();
+			s.generarSegmentoDatos(data, numSec);
+			byte[] datos = s.toByteArray();
+			MediumPacket paquete = new MediumPacket(datos, datos.length, addr);
+			socket.send(paquete);
+			TimeoutTask t = new TimeoutTask(socket, cerrojoTimeout, this, addr,
+					s);
+			marcaTiempo.schedule(t, TIMEOUT);
+			boolean flag = true;
+			MediumPacket ack = new MediumPacket();
+			while (flag) {
+				ack = socket.receive();
+				if (ack != null) {
+					Segment segmento = new Segment();
+					byte[] puros = ack.getData();
+					segmento.fromByteArray(puros);
+					if (segmento.checksumComprobacion()) {
+						t.cancel();
+						numSec = (byte) ((numSec + 1) % 1);
+						flag = false;
+					}
+
+				}
+				// actualizo nseg
+			}
+		}
+		// mientras que me queden cosas envio segmento y espero ack
+		return buffer.length;
+
+	}
+
+	@Override
+	public int read(byte[] buffer) throws IOException {
+		MediumPacket recibidos = new MediumPacket();
+		while (bufferRecibe.getAvailableDataLength() < buffer.length) {
+			recibidos = socket.receive();
+			// recibo
+			while (recibidos == null) {
+				recibidos = socket.receive();
+			}
+			Segment datos = new Segment();
+			byte[] puros = recibidos.getData();
+			datos.fromByteArray(puros);
+			if (datos.checksumComprobacion()) {
+				bufferRecibe.addReceivedSegment(datos);
+				Segment confirmacion = new Segment();
+				confirmacion.generarSegmentoConfirmacion((byte) ((datos
+						.getSeq_n() + 1) % 1));
+				byte[] conf = confirmacion.toByteArray();
+				MediumPacket ack = new MediumPacket(conf, conf.length, addr);
+				socket.send(ack);
+			}
+		}
+		return bufferRecibe.obtainDataInOrder(buffer);
+	}
+
+}

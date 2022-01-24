@@ -1,0 +1,30 @@
+package es.um.redes.Confiable.App;
+
+import java.io.*;
+import java.util.LinkedList;
+
+public class Log {
+	
+	
+	private LinkedList<String> log;
+	
+	
+	public Log(){
+		log = new LinkedList<String>();
+	}
+	
+	public void addString(String cadena){
+		log.add(cadena);
+	}
+	
+	public void crearFicheroLog(String nombre){
+		FileWriter fichero = null;
+		try {
+			fichero = new FileWriter(nombre);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+				
+	}
+
+}

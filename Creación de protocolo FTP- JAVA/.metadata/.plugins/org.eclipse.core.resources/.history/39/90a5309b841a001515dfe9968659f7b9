@@ -1,0 +1,139 @@
+package es.um.redes.Confiable.App;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.file.Files;
+
+import es.um.redes.Confiable.App.Proto.AppData;
+import es.um.redes.Confiable.App.Proto.ByteIO;
+import es.um.redes.Confiable.Intercambio.ReliableConnectionImpl;
+
+public class Client {
+
+	private ReliableConnectionImpl conn;
+
+	public Client() {
+		this.conn = new ReliableConnectionImpl();
+	}
+
+	protected void startConversation(String remoteHostName) {
+		String[] partes = new String[3];
+		try {
+			conn.connect(InetAddress.getByName(remoteHostName));
+		} catch (IOException e2) {
+			System.err.println("host desconocido");
+		}
+		boolean flag = true;
+		while (flag) {
+			System.out.print("Introduce comando: ");
+			BufferedReader br = new BufferedReader(new InputStreamReader(
+					System.in));
+			String command;
+			try {
+				command = br.readLine();
+				partes = command.split("\\s+");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			switch (partes[0]) {
+			case "get":
+				// pido un fichero al servidor
+				AppData datos = new AppData(AppData.OP_GET, partes[1], null);
+				try {
+					conn.write(ByteIO.toByteArray(datos));
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				AppData lectura = null;
+				try {
+					lectura = ByteIO.fromConnection(conn);
+				} catch (IOException e2) {
+					e2.printStackTrace();
+				}
+				File nombreOriginal = new File(partes[1]);
+				String filename = "Recibido" + File.separator
+						+ nombreOriginal.getName();
+				File ret= new File(filename);
+				// Crear los directorios si no existen
+				retfile.getParentFile().mkdirs();
+				AppData confirmacion = null;
+				try {
+					// Write file
+					Files.write(retfile.toPath(), lectura.getData());
+					// envia el ok
+					confirmacion = new AppData(AppData.OP_OK, filename, null);
+				} catch (IOException e) {
+					confirmacion = new AppData(AppData.OP_ERROR, filename,
+							"No se puede crear el fichero.".getBytes());
+				}
+
+				if (lectura.getOPCode() == 4) {
+					System.out
+							.println("Fallo de recibimiento del fichero, intentelo mas tarde");
+				}
+				if (lectura.getOPCode() == 5)
+					System.out
+							.println("El fichero se ha recibido correctamente");
+				break;
+			case "put":
+				// devuelvo el fichero
+				String nombre = paquete.getFilename();
+				File retfile = new File(filename);
+
+				long filesize = retfile.length();
+				byte[] bytes = new byte[(int) filesize];
+
+				AppData retData;
+
+				try {
+					bytes = Files.readAllBytes(retfile.toPath());
+					retData = new AppData(AppData.OP_FILE, filename, bytes);
+				} catch (IOException e) {
+					retData = new AppData(AppData.OP_ERROR, filename,
+							"Error recuperando el fichero.".getBytes());
+				}
+
+				try {
+					conn.write(ByteIO.toByteArray(retData));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				break;
+			case "exit":
+				flag = false;
+				AppData salida = new AppData(AppData.OP_END, null, null);
+				try {
+					conn.write(ByteIO.toByteArray(salida));
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+
+				try {
+					conn.close();
+				} catch (IOException e) {
+
+					e.printStackTrace();
+				}
+				break;
+			}
+		}
+	}
+
+	public static void main(String[] args) {
+		if (args.length != 1) {
+			System.out.println("Usage: java TCPClient <hostname>");
+			return;
+		}
+
+		Client client = new Client();
+		client.startConversation(args[0]);
+	}
+
+}

@@ -1,0 +1,13 @@
+func prueba () {
+ let a=0;
+ var c=5+2-2,i, b;
+ print "Inicio del programa\n";
+while (c)
+ {
+ print "c = ",c,"\n";
+ b = c-2+1;
+ }
+print "Final","\n";
+
+
+}

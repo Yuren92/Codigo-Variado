@@ -1,0 +1,245 @@
+************** NOMBRE ***************
+fmod NATURAL is
+
+************** CONJUNTOS ************
+ protecting BOOL .
+ sort N .
+ sort NoN .
+ subsort NoN < N .
+
+************** SINTAXIS *************
+   op cero : -> N .
+   op sucesor : N -> N .
+   op suma : N N -> N .
+   op esCero : N -> Bool .
+   op esIgual : N N -> Bool .
+   op producto : N N -> N .
+   op potencia : N N -> N .
+   op factorial : N -> N .
+   op predecesor : N -> N .
+   op resta : N N -> N .
+   op diferencia : N N -> N .
+   op difUno : N N -> Bool .
+   op esMenor : N N -> Bool .
+   op esMenorIgual : N N -> Bool .
+   op esMayor : N N -> Bool .
+   op esMayorIgual : N N -> Bool .
+   op maximo : N N -> N .
+   op minimo : N N -> N .
+   op division : N N -> N .
+   op modulo : N N -> N .
+   op mitad : N -> N .
+   op esPar : N -> Bool .
+ 
+ op NODEFINIDO : -> NoN .
+ op INFINITO : -> NoN .
+ op NEGATIVO : -> NoN .
+
+************** SEMANTICA ************
+ var n m : N .
+
+   eq suma(cero, n) = n .
+   eq suma(sucesor(m), n) = sucesor(suma(m, n)) .
+   eq esCero(cero) = true .
+   eq esCero(sucesor(n)) = false .
+   eq esIgual(cero, n) = esCero(n) .
+   eq esIgual(sucesor(n), cero) = false .
+   eq esIgual(sucesor(n), sucesor(m)) = esIgual(n, m) .
+   eq producto(cero, n) = cero .
+   eq producto(sucesor(n), m) = suma(m,producto(n,m)) .
+   eq potencia(cero, cero) = NODEFINIDO .
+   eq potencia(cero, n) = cero .
+   eq potencia(n, cero) = sucesor(cero) .
+   eq potencia(n, sucesor(m)) = producto(n, potencia(n,m)) .
+   eq factorial(cero) = sucesor(cero) .
+   eq factorial(sucesor(n)) = producto(sucesor(n), factorial(n)) .
+   eq predecesor(NEGATIVO) = NEGATIVO .
+   eq predecesor(cero) = NEGATIVO .
+   eq predecesor(sucesor(n)) = n .
+   eq resta(cero, cero) = cero .
+   eq resta(cero, n) = NEGATIVO .
+   eq resta(n, cero) = n .
+   eq resta(n, sucesor(m)) = predecesor(resta(n,m)) .
+   eq diferencia(n, m) = if resta(n, m) == NEGATIVO then resta(m,n) else resta(n,m) fi .
+   eq difUno(n, m) = if diferencia(n, m) == sucesor(cero) or diferencia(n, m) == cero then true else false fi .
+   eq esMenor(n, m) = if resta(n, m) == NEGATIVO then true else false fi .
+   eq esMenorIgual(n, m) = if resta(n, m) == NEGATIVO or resta(n, m) == cero then true else false fi .
+   eq esMayor(n, m) = if resta(m, n) == NEGATIVO then true else false fi .
+   eq esMayorIgual(n, m) = if resta(m, n) == NEGATIVO or resta(m, n) == cero then true else false fi .  
+   eq maximo(n, m) = if resta(n, m) == NEGATIVO then m else n fi .
+   eq minimo(n, m) = if resta(n, m) == NEGATIVO then n else m fi .
+   eq division(cero, cero) = NODEFINIDO .
+   eq division(cero, n) = cero .
+   eq division(n, cero) = INFINITO .
+   eq division(n, m) = if resta(n, m) == NEGATIVO then cero else sucesor(division(resta(n, m),m)) fi .
+   eq modulo(cero, cero) = NODEFINIDO .
+   eq modulo(cero, n) = cero .
+   eq modulo(n, cero) = NODEFINIDO .
+   eq modulo(n, m) = if esMayor(m, n) then n else modulo(resta(n, m),m) fi .
+   eq mitad(n) = division(n,sucesor(sucesor(cero))) .
+   eq esPar(cero) = true .
+   eq esPar(n) = if n == sucesor(cero) then false else esPar(resta(n,sucesor(sucesor(cero)))) fi .
+endfm
+
+
+************** NOMBRE ***************
+fmod VOCAL is
+
+************** CONJUNTOS ************
+	protecting BOOL .
+	sort V .
+
+************** SINTAXIS *************
+	ops A E I O U : -> V .
+	op esIgual : V V -> Bool .
+	op esDistinta : V V -> Bool .
+	op esMenor : V V -> Bool .
+
+************** SEMANTICA ************
+ var v w : V .
+
+	eq esIgual(v, v) = true .
+	eq esIgual(v, w) = false .
+	eq esDistinta(v, w) = not esIgual(v, w) .
+	eq esMenor(v, v) = false .
+	eq esMenor(U, v) = false . 
+	eq esMenor(A, v) = true . 
+	eq esMenor(O, U) = true . 
+	eq esMenor(O, v) = false . 
+	eq esMenor(I, U) = true . 
+	eq esMenor(I, O) = true . 
+	eq esMenor(I, v) = false . 
+	eq esMenor(E, A) = false . 
+	eq esMenor(E, v) = true .
+
+endfm
+
+************** NOMBRE ***************
+fmod LISTA is
+
+************** CONJUNTOS ************
+   protecting BOOL .
+   protecting NATURAL .
+   protecting VOCAL .
+   sort L .
+   sort MensajeListas .
+   subsorts MensajeListas < V .
+
+************** SINTAXIS *************
+   op listaVacia : -> L .
+   op esVacia : L -> Bool .
+   op insertar : V L -> L .
+   op insertarFinal : V L -> L .
+   op tamano : L -> N .
+   op primero : L -> V .
+   op ultimo : L -> V .
+   op cabeza : L -> L .
+   op cola : L -> L .
+   op invertir : L -> L .
+   op concatenar : L L -> L .
+   op insertarVarias : V N L -> L .
+   op lista : V -> L .
+   op lista : V V -> L .
+   op lista : V V V -> L .
+
+   op ErrorListaVacia : -> MensajeListas .
+
+************** SEMANTICA ************
+   var l k : L .
+   var v w u : V .
+   var n : N .
+
+   eq esVacia(listaVacia) = true .
+   eq esVacia(insertar(v, l)) = false .
+   eq insertarFinal(v, listaVacia) = insertar(v, listaVacia) .
+   eq insertarFinal(v, insertar(w, l)) = insertar(w, insertarFinal(v, l)) .
+   eq tamano(listaVacia) = cero .
+   eq tamano(insertar(v, l)) = sucesor(tamano(l)) .
+   eq primero(listaVacia) = ErrorListaVacia .
+   eq primero(insertar(v, l)) = v .
+   eq ultimo(listaVacia) = ErrorListaVacia .
+   eq ultimo(insertar(v, listaVacia)) = v .
+   eq ultimo(insertar(v, l)) = ultimo(l) .
+   eq cabeza(listaVacia) = listaVacia .
+   eq cabeza(insertar(v, listaVacia)) = listaVacia .
+   eq cabeza(insertar(v, l)) = insertar(v, cabeza(l)) .
+   eq cola(listaVacia) = listaVacia .
+   eq cola(insertar(v, l)) = l . 
+   eq invertir(listaVacia) = listaVacia .
+   eq invertir(insertar(v, listaVacia)) = insertar(v, listaVacia) .
+   eq invertir(insertar(v, l)) = insertarFinal(v,invertir(l)) .
+   eq concatenar(listaVacia, listaVacia) = listaVacia .
+   eq concatenar(listaVacia, l) = l .
+   eq concatenar(l, listaVacia) = l .
+   eq concatenar(insertar(v, l), k) = if l == listaVacia then insertar(v, k) else insertar(v, concatenar(l, k)) fi .
+   eq insertarVarias(v, cero, l) = l .
+   eq insertarVarias(v, sucesor(n), l) = insertar(v, insertarVarias(v, n, l)) .   
+   eq lista(v) = insertar(v, listaVacia) .
+   eq lista(v, w) = insertar(v, insertar(w, listaVacia)) .
+   eq lista(u, v, w) = insertar(u, insertar(v, insertar(w, listaVacia))) .   
+endfm
+
+
+************** NOMBRE ***************
+fmod ARBOL is
+
+************** CONJUNTOS ************
+   protecting BOOL .
+   protecting NATURAL .
+   protecting VOCAL .
+   protecting LISTA .
+   sort AB .
+
+************* SINTAXIS ************* 
+	op arbolVacio : -> AB .
+	op esVacio : AB -> Bool .
+	op construir : V AB AB -> AB .
+	op construirRaiz : V -> AB .
+	op altura : AB -> N .
+	op numNodos : AB -> N .
+   op esIgual : AB AB -> Bool .
+   op cuentaVocal : V AB -> N .
+   op cuentaHojas : AB -> N .
+   op espejo : AB -> AB .
+	op preOrden : AB -> L .
+	op inOrden : AB -> L . 
+	op postOrden : AB -> L .
+
+ 
+************* SEMANTICA ************ 
+	var v w : V .
+   var a a1 a2 b1 b2 : AB .
+	var l : L .
+ 
+	eq esVacio(arbolVacio) = true .
+	eq esVacio(construir(v, a1, a2)) = false .
+	eq construirRaiz(v) = construir(v, arbolVacio, arbolVacio) .
+	eq altura(arbolVacio) = cero .
+	eq altura(construir(v, arbolVacio, arbolVacio)) = sucesor(cero) .
+	eq altura(construir(v, a, arbolVacio)) = sucesor(altura(a)) .
+	eq altura(construir(v, arbolVacio, a)) = sucesor(altura(a)) .
+	eq altura(construir(v, a1, a2)) = sucesor(maximo(altura(a1),altura(a2))) .
+	eq numNodos(arbolVacio) = cero .
+	eq numNodos(construir(v, a1, a2)) = sucesor(suma(numNodos(a1),numNodos(a2))) .
+   eq esIgual(arbolVacio, arbolVacio) = true .
+   eq esIgual(arbolVacio, a) = false .
+   eq esIgual(a, arbolVacio) = false .
+   eq esIgual(construir(v, a1, a2),construir(w, b1, b2)) = esIgual(v, w) and esIgual(a1, b1) and esIgual(a2, b2) .
+   eq cuentaVocal(v, arbolVacio) = cero .
+   eq cuentaVocal(v, construir(w, a1, a2)) = if esIgual(v, w) then sucesor(suma(cuentaVocal(v, a1),cuentaVocal(v, a2))) else suma(cuentaVocal(v, a1),cuentaVocal(v, a2)) fi .
+   eq cuentaHojas(arbolVacio) = cero .
+   eq cuentaHojas(construir(v, arbolVacio, arbolVacio)) = sucesor(cero) .
+   eq cuentaHojas(construir(v, a1, a2)) = suma(cuentaHojas(a1),cuentaHojas(a2)) .
+   eq espejo(arbolVacio) = arbolVacio .
+   eq espejo(construir(v, a1, a2)) = construir(v, espejo(a2), espejo(a1)) .
+	eq preOrden(arbolVacio) = listaVacia .
+	eq preOrden(construir(v, a1, a2)) = insertar(v, concatenar(preOrden(a1),preOrden(a2))) .
+	eq inOrden(arbolVacio) = listaVacia . 
+	eq inOrden(construir(v, a1, a2)) =
+	concatenar(concatenar(inOrden(a1),insertar(v, listaVacia)), inOrden(a2)) .
+	eq postOrden(arbolVacio) = listaVacia . 
+	eq postOrden(construir(v, a1, a2)) =
+	concatenar(concatenar(postOrden(a1),postOrden(a2)), insertar(v, listaVacia)) .
+
+
+endfm

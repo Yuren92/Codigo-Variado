@@ -1,0 +1,7 @@
+import es.um.redes.Confiable.Intercambio.ReliableConnectionImpl;
+
+
+public class Client {
+	private ReliableConnectionImpl conn;
+	
+}

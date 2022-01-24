@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Redenominar el paquete &apos;Ejercicio4&apos; como &apos;ejercicio4&apos;&#x0D;&#x0A;- Proyecto original: &quot;sesion4-5&quot;&#x0D;&#x0A;- Elemento original: &apos;sesion4-5/src/Ejercicio4&apos;&#x0D;&#x0A;- Elemento redenominado: &apos;sesion4-5/src/ejercicio4&apos;&#x0D;&#x0A;- Actualizar referencias a elemento refactorizado&#x0D;&#x0A;- Actualizar apariciones textuales en comentarios y series" description="Redenominar paquete &apos;Ejercicio4&apos;" flags="589830" hierarchical="false" id="org.eclipse.jdt.ui.rename.package" input="/src&lt;Ejercicio4" name="ejercicio4" qualified="false" references="true" stamp="1425568764502" textual="false" version="1.0"/>
+</session>

@@ -1,0 +1,312 @@
+package es.um.redes.Confiable.Intercambio;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+
+import es.um.redes.Confiable.Intercambio.util.RecvBuffer;
+import es.um.redes.Confiable.Medio.MediumPacket;
+import es.um.redes.Confiable.Medio.MediumSocket;
+import es.um.redes.intercambio.impl.Segment;
+
+public class ReliableConnectionImpl implements ReliableConnectionIface {
+	private static final int PORT = 8009;
+	private MediumSocket socket;
+	private int MSS = 500;
+	private byte numSec;
+	private RecvBuffer bufferRecibe;
+	private InetSocketAddress addr;
+	private boolean cliente;
+
+	public ReliableConnectionImpl() {
+		bufferRecibe = new RecvBuffer();
+		cliente = false;
+	}
+
+	@Override
+	public void connect(InetAddress to) throws IOException {
+		addr = new InetSocketAddress(to, PORT);
+		socket = new MediumSocket();
+		Segment segmento = new Segment();
+		cliente = true;
+		segmento.generarSegmentoSYN(MSS, numSec);
+		byte[] buf = segmento.toByteArray();
+		System.out.println(segmento);
+		MediumPacket paq = new MediumPacket(buf, buf.length, addr);
+		for(int i = 0; i< buf.length; i++){
+			System.out.println(buf[i]);
+		}
+		socket.send(paq);
+		System.out.println("connect envia primer paquete");
+		MediumPacket confirmacion = new MediumPacket();
+		boolean flag = true;
+
+		while (flag) {
+			confirmacion = socket.receive();
+			if (confirmacion != null) {
+				System.out.println("llega a connect la confirmacion de conexion");
+				Segment segmentoAux = new Segment();
+				byte[] buffer = confirmacion.getData();
+				segmentoAux.fromByteArray(buffer);
+				if (segmentoAux.checksumComprobacion()) {
+					flag = false;
+				}
+			}
+		}
+
+	}
+
+	@Override
+	public void accept() throws IOException {
+		socket = new MediumSocket(PORT);
+		MediumPacket recibe = socket.receive();
+		boolean flag = true;
+		Segment segmentoAux = new Segment();
+		while (flag) {
+			recibe = socket.receive();
+			if (recibe != null) {
+				System.out.println("accept recibe en sin de conexion");
+				byte[] buffer = recibe.getData();
+				addr = recibe.getInetAddr();
+				segmentoAux.fromByteArray(buffer);
+				System.out.println(segmentoAux);
+				for(int i = 0; i< buffer.length; i++){
+					System.out.println(buffer[i]);
+				}
+				//no comprueba checksum ok
+				System.out.println(segmentoAux);
+				segmentoAux.checksumComprobacion();
+				if (segmentoAux.checksumComprobacion()) {
+				System.out.println("checksum correcto en accept");
+					flag = false;
+				}
+			}
+		}
+		System.out.println(flag);
+		if (flag == false) {
+			byte[] msj = null;
+			Segment confirmacion = new Segment((byte) 3,
+					(byte) ((segmentoAux.getSeq_n() + 1) % 1), numSec, msj, MSS);
+			byte[] buf = confirmacion.toByteArray();
+			MediumPacket paq = new MediumPacket(buf, buf.length, addr);
+			for(int i = 0; i< buf.length; i++){
+				System.out.println(buf[i]);
+			}
+			socket.send(paq);
+			System.out.println("envia confirmacion en accept de la conexion");
+		}
+
+	}
+
+	@Override
+	public int getMSS() {
+		return MSS;
+	}
+
+	@Override
+	public void setMSS(int mss) {
+		this.MSS = (byte) mss;
+
+	}
+
+	@Override
+	public void close() throws IOException {
+		if (cliente == true) {
+			// send FIN
+			Segment FIN = new Segment();
+			FIN.segmentoCierre(numSec);
+			byte[] data = FIN.toByteArray();
+			MediumPacket fin = new MediumPacket(data, data.length, addr);
+			// envia fin
+			socket.send(fin);
+			// receive ack
+			boolean flag = true;
+			MediumPacket paq = new MediumPacket();
+			while (flag) {
+				paq = socket.receive();
+				if (paq != null) {
+					Segment aux = new Segment();
+					byte[] aux2 = paq.getData();
+					aux.fromByteArray(aux2);
+					if (aux.checksumComprobacion()) {
+						flag = false;
+					}
+				}
+			}
+			// receive fin
+			flag = true;
+			MediumPacket paq2 = new MediumPacket();
+			while (flag) {
+				paq2 = socket.receive();
+				if (paq2 != null) {
+					Segment aux3 = new Segment();
+					byte[] datospaq = paq2.getData();
+					aux3.fromByteArray(datospaq);
+					if (aux3.checksumComprobacion()) {
+						flag = false;
+						// send ack
+						aux3.generarSegmentoConfirmacion(
+								(byte) ((aux3.getSeq_n() + 1) % 1), numSec);
+					}
+				}
+			}
+
+		} else {
+			// caso servidor
+			// receive fin
+			boolean fin = true;
+			MediumPacket paqfin = new MediumPacket();
+			while (fin) {
+				paqfin = socket.receive();
+				if (paqfin != null) {
+					Segment s = new Segment();
+					byte[] datos = paqfin.getData();
+					s.fromByteArray(datos);
+					if (s.checksumComprobacion()) {
+						// send ack
+						Segment s1 = new Segment();
+						s1.generarSegmentoConfirmacion(
+								(byte) ((s.getSeq_n() + 1) % 1), numSec);
+						fin = false;
+					}
+				}
+			}
+
+			// send fin
+			Segment segfin = new Segment();
+			segfin.segmentoCierre(numSec);
+			byte[] datasegfin = segfin.toByteArray();
+			MediumPacket segundoenvio = new MediumPacket(datasegfin,
+					datasegfin.length, addr);
+			socket.send(segundoenvio);
+			// receive ack
+			fin = true;
+			MediumPacket paq3 = new MediumPacket();
+			while (fin) {
+				paq3 = socket.receive();
+				if (paq3 != null) {
+					Segment s = new Segment();
+					byte[] datos = paq3.getData();
+					s.fromByteArray(datos);
+					if (s.checksumComprobacion()) {
+						fin = false;
+					}
+				}
+			}
+		}
+
+	}
+
+	@Override
+	public int getTimeoutValue() {
+		// TODO Apéndice de método generado automáticamente
+		return 0;
+	}
+
+	@Override
+	public InetSocketAddress getPeerAddress() {
+		return addr;
+	}
+
+	@Override
+	public int write(byte[] buffer) throws IOException {
+		if (buffer.length <= MSS) {
+			Segment segmento = new Segment();
+			segmento.generarSegmentoDatos(buffer, numSec);
+			byte[] datos = segmento.getData();
+			MediumPacket envio = new MediumPacket(datos, datos.length, addr);
+			socket.send(envio);
+			numSec = (byte) ((numSec + 1) % 1);
+			MediumPacket ack = new MediumPacket();
+			boolean recibe = true;
+			while (recibe) {
+				ack = socket.receive();
+				if (ack != null) {
+					Segment segmentoAux = new Segment();
+					byte[] auxBuffer = ack.getData();
+					segmentoAux.fromByteArray(auxBuffer);
+					if (segmentoAux.checksumComprobacion()) {
+						recibe = false;
+					}
+				}
+			}
+		} else {
+			byte[] data = new byte[MSS];
+			int indice = 0;
+			while (indice < buffer.length) {
+				int aux = 0;
+				for (int i = indice; i < MSS; i++) {
+					data[i] = buffer[i];
+					aux = i;
+				}
+				indice = aux;
+				Segment envio = new Segment();
+				// una vez almacenados en el array los datos, genero el segmento
+				// y lo envio
+				envio.generarSegmentoDatos(data, numSec);
+				byte[] segmento = envio.getData();
+				MediumPacket paquete = new MediumPacket(segmento,
+						segmento.length, addr);
+				socket.send(paquete);
+				// espero a recibir el ack para enviar el siguiente paquete de
+				// datos
+				boolean flag = true;
+				MediumPacket confirmacion = new MediumPacket();
+				while (flag) {
+					confirmacion = socket.receive();
+					if (confirmacion != null) {
+						Segment segmentoAux = new Segment();
+						byte[] buff = confirmacion.getData();
+						segmentoAux.fromByteArray(buff);
+						if (segmentoAux.checksumComprobacion()) {
+							flag = false;
+						}
+					}
+				}
+
+			}
+
+		}
+		return buffer.length;
+	}
+
+	@Override
+	public int read(byte[] buffer) throws IOException {
+		// recibe datos
+		MediumPacket recibidos = new MediumPacket();
+		boolean recibir = true;
+		while (recibir) {
+			recibidos = socket.receive();
+			if (recibidos != null) {
+				Segment segmentoAux = new Segment();
+				byte[] buff = recibidos.getData();
+				segmentoAux.fromByteArray(buff);
+				if (segmentoAux.checksumComprobacion()) {
+					bufferRecibe.addReceivedSegment(segmentoAux);
+					// una vez que almaceno el segmento envio confirmacion
+					Segment ack = new Segment();
+					ack.generarSegmentoConfirmacion(
+							(byte) ((segmentoAux.getSeq_n() + 1) % 1), numSec);
+					byte[] datos = ack.toByteArray();
+					MediumPacket paquete = new MediumPacket(datos,
+							datos.length, addr);
+					socket.send(paquete);
+				}
+				if (bufferRecibe.getAvailableDataLength() == buffer.length) {
+					recibir = false;
+				}
+			}
+		}
+		// guarda en bufferreceibe
+		int bytes = 0;
+		if (bufferRecibe.getAvailableDataLength() == buffer.length) {
+			bytes = bufferRecibe.obtainDataInOrder(buffer);
+		}
+		// cuando pueda llenar el buffer del parametro con los datos de
+		// bufferreceive
+		// vuelco los datos al buffer
+		// devuelvo longitud
+		return bytes;
+	}
+
+}

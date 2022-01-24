@@ -1,0 +1,6 @@
+<h1>Hay {{conferencias|length}} conferencias, y son las siguientes:</h1>
+<ul>
+    {% for conferencia in conferencias %}
+        <li>{{conferencia}}</li>
+    {% endfor %}
+</ul>

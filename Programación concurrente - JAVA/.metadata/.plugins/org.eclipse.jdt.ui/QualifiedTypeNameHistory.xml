@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="java.lang.Runnable"/>
+<fullyQualifiedTypeName name="ejercicio2.Ejercicio2"/>
+<fullyQualifiedTypeName name="ejercicio3.Ejercicio3"/>
+<fullyQualifiedTypeName name="ejercicio4.Inglesar"/>
+<fullyQualifiedTypeName name="ejercicio1.PrimerIntento"/>
+<fullyQualifiedTypeName name="ejercicio3.memoriaGlobal"/>
+<fullyQualifiedTypeName name="ejercicio4.memoriaGlobal"/>
+<fullyQualifiedTypeName name="java.util.concurrent.locks.ReentrantLock"/>
+<fullyQualifiedTypeName name="ejercicio4.MemoriaGlobal"/>
+<fullyQualifiedTypeName name="java.util.ArrayList"/>
+<fullyQualifiedTypeName name="java.util.Random"/>
+<fullyQualifiedTypeName name="ejercicio6.Consumidor"/>
+<fullyQualifiedTypeName name="java.util.concurrent.Semaphore"/>
+<fullyQualifiedTypeName name="java.lang.InterruptedException"/>
+<fullyQualifiedTypeName name="ejercicio6.MemoriaGlobal"/>
+<fullyQualifiedTypeName name="ejercicio6.Semaforos"/>
+<fullyQualifiedTypeName name="ejercicio7.Productor"/>
+<fullyQualifiedTypeName name="ejercicio7.Semaforos"/>
+<fullyQualifiedTypeName name="ejercicio7.Consumidor"/>
+<fullyQualifiedTypeName name="ejercicio4.HiloAmigos"/>
+<fullyQualifiedTypeName name="ejercicio4.MonitorSaludo"/>
+<fullyQualifiedTypeName name="ejercicio5.MonitorSaludo"/>
+<fullyQualifiedTypeName name="java.lang.Object"/>
+<fullyQualifiedTypeName name="javax.management.monitor.Monitor"/>
+<fullyQualifiedTypeName name="java.lang.Thread"/>
+<fullyQualifiedTypeName name="messagepassing.MailBox"/>
+<fullyQualifiedTypeName name="messagepassing.Selector"/>
+<fullyQualifiedTypeName name="ejercicio2.HiloXCuadrado"/>
+<fullyQualifiedTypeName name="ejercicio2.Control"/>
+<fullyQualifiedTypeName name="java.lang.Math"/>
+</qualifiedTypeNameHistroy>

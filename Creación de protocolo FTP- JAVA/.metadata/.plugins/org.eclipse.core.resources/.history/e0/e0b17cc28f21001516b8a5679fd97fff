@@ -1,0 +1,37 @@
+package es.um.redes.Confiable.App;
+
+import java.io.*;
+import java.util.LinkedList;
+
+import es.um.redes.intercambio.impl.Segment;
+
+public class Log {
+	
+ 	private PrintWriter fichero;
+	
+	
+	public Log(String nombre){
+		PrintWriter fichero = null;
+		try {
+			 fichero= new PrintWriter(nombre+".txt", "ISO-8859-1");
+			 } catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void add(String cadena, Segment s){
+		
+	}
+	
+	public void crearFicheroLog(String nombre){
+		
+		if(fichero != null){
+			for (String e : log) {
+				fichero.println(e);
+			}
+		}
+		fichero.close();
+				
+	}
+
+}

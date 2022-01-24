@@ -1,0 +1,143 @@
+************** NOMBRE ***************
+fmod VOCAL is
+
+************** CONJUNTOS ************
+   protecting BOOL .
+   sort V .
+
+************** SINTAXIS *************
+   ops A E I O U : -> V .
+   op esIgual : V V -> Bool .
+   op esDistinta : V V -> Bool .
+   op esMenor : V V -> Bool .
+
+************** SEMANTICA ************
+   var v w : V .
+
+   eq esIgual(v, v) = true .
+   eq esIgual(v, w) = false .
+   eq esDistinta(v, w) = not esIgual(v, w) .
+   eq esMenor(v, v) = false .
+   eq esMenor(U, v) = false . 
+   eq esMenor(A, v) = true . 
+   eq esMenor(O, U) = true . 
+   eq esMenor(O, v) = false . 
+   eq esMenor(I, U) = true . 
+   eq esMenor(I, O) = true . 
+   eq esMenor(I, v) = false . 
+   eq esMenor(E, A) = false . 
+   eq esMenor(E, v) = true .
+
+endfm
+
+************** NOMBRE ***************
+fmod NATURAL is
+
+************** CONJUNTOS ************
+   protecting BOOL .
+   sort N .
+   sort NoN .
+   subsort NoN < N .
+
+************** SINTAXIS *************
+   op cero : -> N .
+   op sucesor : N -> N .
+   op suma : N N -> N .
+   op esCero : N -> Bool .
+   op esIgual : N N -> Bool .
+   op esDistinto : N N -> Bool .
+
+   op NODEFINIDO : -> NoN .
+   op INFINITO : -> NoN .
+   op NEGATIVO : -> NoN .
+
+endfm
+
+
+
+************** NOMBRE ***************
+fmod LISTA is
+
+************** CONJUNTOS ************
+   protecting BOOL .
+   protecting NATURAL .
+   protecting VOCAL .
+   sort L .
+   sort MensajeListas .
+   subsorts MensajeListas < V .
+
+************** SINTAXIS *************
+   op listaVacia : -> L .
+   op esVacia : L -> Bool .
+   op insertar : V L -> L .
+   op insertarFinal : V L -> L .
+   op tamano : L -> N .
+   op primero : L -> V .
+   op ultimo : L -> V . 
+   op cabeza : L -> L . 
+   op cola : L -> L .
+   op invertir : L -> L .
+   op concatenar : L L -> L .
+   op insertarVarias : V N L -> L . 
+   op lista : V -> L .
+   op lista : V V -> L . 
+   op lista : V V V -> L .
+   op esIgual : L L -> Bool .
+   op buscar : V L -> N . 
+   op posicion : N L -> V .
+   op esMenor : L L -> Bool .
+
+   op ErrorListaVacia : -> MensajeListas .
+   op ERRORFUERADELISTA : -> MensajeListas .
+
+
+************** SEMANTICA ************
+   var l k : L .
+   var v w u : V .
+   var n : N .
+
+   eq esVacia(listaVacia) = true .
+   eq esVacia(insertar(v, l)) = false .
+   eq insertarFinal(v, listaVacia) = insertar(v, listaVacia) .
+   eq insertarFinal(v, insertar(w, l)) = insertar(w, insertarFinal(v, l)) .
+   eq tamano(listaVacia) = cero .
+   eq tamano(insertar(v, l)) = sucesor(tamano(l)) .
+   eq primero(listaVacia) = ErrorListaVacia . 
+   eq primero(insertar(v, l)) = v .
+   eq ultimo(listaVacia) = ErrorListaVacia . 
+   eq ultimo(insertar(v, listaVacia)) = v . 
+   eq ultimo(insertar(v, l)) = ultimo(l) . 
+   eq cabeza(listaVacia) = listaVacia .
+   eq cabeza(insertar(v, listaVacia)) = listaVacia .
+   eq cabeza(insertar(v, l)) = insertar(v, cabeza(l)) . 
+   eq cola(listaVacia) = listaVacia .
+   eq cola(insertar(v, l)) = l .
+   eq invertir(listaVacia) = listaVacia .
+   eq invertir(insertar(v, listaVacia)) = insertar(v, listaVacia) .
+   eq invertir(insertar(v, l)) = insertarFinal(v,invertir(l)) . 
+   eq concatenar(listaVacia, listaVacia) = listaVacia .
+   eq concatenar(listaVacia, l) = l . 
+   eq concatenar(l, listaVacia) = l .
+   eq concatenar(insertar(v, l), k) = if l == listaVacia then insertar(v, k) else insertar(v, concatenar(l, k)) fi .
+   eq insertarVarias(v, cero, l) = l .
+   eq insertarVarias(v, sucesor(n), l) = insertar(v, insertarVarias(v, n, l)) .
+   eq lista(v) = insertar(v, listaVacia) .
+   eq lista(v, w) = insertar(v, insertar(w, listaVacia)) . 
+   eq lista(u, v, w) = insertar(u, insertar(v, insertar(w, listaVacia))) .
+
+   eq esIgual(listaVacia, listaVacia) = true . 
+   eq esIgual(listaVacia, l) = false .
+   eq esIgual(l, listaVacia) = false .
+   eq esIgual(insertar(v, l),insertar(w, k)) = if esIgual(v, w) and esIgual	(l,k) then true else false fi .
+   eq buscar(v, listaVacia) = sucesor(cero) .
+   eq buscar(v, insertar(w, l)) = if esIgual(v, w) then cero else sucesor(buscar(v, l)) fi .
+   eq posicion(cero, insertar(v, l)) = v .
+   eq posicion(n, listaVacia) = ERRORFUERADELISTA .
+   eq posicion(sucesor(n), insertar(v, l)) = posicion(n, l) . 
+   eq esMenor(listaVacia, listaVacia) = false .
+   eq esMenor(listaVacia, l) = true . 
+   eq esMenor(l,listaVacia) = false .
+   eq esMenor(insertar(v,l),insertar(v,k)) = esMenor(l,k) . 
+   eq esMenor(insertar(v,l),insertar(w,k)) = esMenor(v,w) .
+
+endfm

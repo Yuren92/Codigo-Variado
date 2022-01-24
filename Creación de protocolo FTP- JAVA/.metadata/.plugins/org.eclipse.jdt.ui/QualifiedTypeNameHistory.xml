@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="es.um.redes.Confiable.Intercambio.data.SegmentIface"/>
+<fullyQualifiedTypeName name="java.nio.ByteBuffer"/>
+<fullyQualifiedTypeName name="es.um.redes.Confiable.Intercambio.ReliableConnectionIface"/>
+<fullyQualifiedTypeName name="es.um.redes.Confiable.Intercambio.util.RecvBuffer"/>
+<fullyQualifiedTypeName name="java.util.concurrent.Semaphore"/>
+<fullyQualifiedTypeName name="java.util.Arrays"/>
+<fullyQualifiedTypeName name="es.um.redes.Confiable.Intercambio.ReliableConnectionImpl"/>
+<fullyQualifiedTypeName name="java.nio.file.Files"/>
+<fullyQualifiedTypeName name="java.net.InetAddress"/>
+<fullyQualifiedTypeName name="java.io.BufferedReader"/>
+<fullyQualifiedTypeName name="java.io.InputStreamReader"/>
+<fullyQualifiedTypeName name="java.io.File"/>
+<fullyQualifiedTypeName name="java.io.FileInputStream"/>
+<fullyQualifiedTypeName name="java.io.FileNotFoundException"/>
+<fullyQualifiedTypeName name="java.net.InetSocketAddress"/>
+<fullyQualifiedTypeName name="java.io.IOException"/>
+<fullyQualifiedTypeName name="java.util.concurrent.locks.ReentrantLock"/>
+<fullyQualifiedTypeName name="java.util.Timer"/>
+<fullyQualifiedTypeName name="es.um.redes.Confiable.Intercambio.TimeoutTask"/>
+<fullyQualifiedTypeName name="java.util.TimerTask"/>
+<fullyQualifiedTypeName name="es.um.redes.Confiable.Medio.MediumSocket"/>
+<fullyQualifiedTypeName name="java.util.LinkedList"/>
+<fullyQualifiedTypeName name="java.io.FileWriter"/>
+<fullyQualifiedTypeName name="es.um.redes.Confiable.App.Log"/>
+<fullyQualifiedTypeName name="es.um.redes.Confiable.App.Proto.ByteIO"/>
+<fullyQualifiedTypeName name="es.um.redes.Confiable.Intercambio.TimeoutTaskClose"/>
+<fullyQualifiedTypeName name="java.io.PrintWriter"/>
+<fullyQualifiedTypeName name="java.lang.System"/>
+<fullyQualifiedTypeName name="es.um.redes.Confiable.App.Proto.AppData"/>
+<fullyQualifiedTypeName name="es.um.redes.intercambio.impl.Segment"/>
+<fullyQualifiedTypeName name="es.um.redes.Confiable.Medio.MediumPacket"/>
+</qualifiedTypeNameHistroy>
